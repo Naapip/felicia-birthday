@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Felicia Birthday ❤️</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@300;500;700&family=Caveat:wght@700&display=swap');
+        
+        body { font-family: 'Quicksand', sans-serif; background-color: #ffe4e6; margin: 0; padding: 0; }
+        .font-romantic { font-family: 'Dancing Script', cursive; }
+        .font-handwritten { font-family: 'Caveat', cursive; }
+
+        /* REVISI LAYOUT: Menggunakan absolute agar bisa scroll */
+        .page { 
+            display: none; 
+            min-height: 100vh; 
+            width: 100%; 
+            position: absolute; 
+            top: 0; 
+            left: 0;
+            padding: 40px 20px; 
+            background-color: #ffe4e6;
+            z-index: 10;
+            overflow-x: hidden;
+        }
+        .page.active { display: flex; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.5s ease forwards; }
+        
+        /* Khusus gallery agar konten mulai dari atas */
+        #page-gallery.active { justify-content: flex-start; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Floating Heart Effect */
+        .heart { position: fixed; background-color: #ff69b4; animation: floatUp 6s ease-in forwards; pointer-events: none; opacity: 0; clip-path: path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'); z-index: 100; }
+        @keyframes floatUp { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-10vh) scale(1.5); opacity: 0; } }
+
+        /* Gallery Grid Frame */
+        .photo-frame {
+            background: white;
+            padding: 8px 8px 25px 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid #eee;
+        }
+        .photo-frame:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 10px 20px rgba(255, 105, 180, 0.2);
+            border-color: #ffb6c1;
+        }
+
+        /* Modal Preview */
+        #photo-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+        .floating-anim { animation: floating 3s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="Song/Mitski_-_My_Love_Mine_All_Mine_slowed_reverb_(mp3.pm).mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="photo-modal" onclick="this.style.display='none'">
+        <img id="modal-img" src="" class="max-h-[85vh] max-w-full rounded shadow-2xl border-4 border-white">
+        <p id="modal-caption" class="mt-4 text-white font-romantic text-2xl text-center"></p>
+    </div>
+
+    <div id="page-welcome" class="page active">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl border-2 border-pink-100 text-center max-w-md w-full relative">
+            <div id="welcome-container">
+                <div class="floating-anim mb-6 flex justify-center">
+                    <img id="gift-gif" src="assets/welcome-page.gif" class="w-48 h-48 object-contain rounded-2xl">
+                </div>
+                <h2 id="welcome-text" class="text-3xl mb-4 text-pink-600 font-bold font-romantic">I have a surprise for you!</h2>
+                <p id="welcome-subtext" class="text-gray-600 mb-8 font-medium italic">Do you want to see your gift?</p>
+            </div>
+
+            <div id="rejected-container" class="hidden">
+                <div class="floating-anim mb-6 flex justify-center">
+                    <img id="sad-gif" src="assets/rejected.gif" class="w-48 h-48 object-contain rounded-2xl">
+                </div>
+                <h2 class="text-3xl mb-6 text-pink-600 font-bold font-romantic">I promise you'll like it!</h2>
+            </div>
+            
+            <div id="initial-choice" class="flex flex-col gap-4">
+                <button onclick="showPage('page-music')" class="bg-pink-500 text-white font-bold py-3 rounded-full shadow-lg hover:bg-pink-600 transition">Yes, please!</button>
+                <button onclick="sayNo()" class="bg-gray-100 text-gray-700 font-bold py-3 rounded-full hover:bg-gray-200 transition">No, thanks.</button>
+            </div>
+            
+            <div id="rejected-choice" class="hidden">
+                <button onclick="resetWelcome()" class="bg-pink-400 text-white font-bold py-4 px-12 rounded-full animate-bounce text-xl shadow-xl">Try again</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-music" class="page">
+        <div class="bg-white p-10 rounded-3xl shadow-2xl text-center max-w-md w-full">
+            <h2 class="text-2xl mb-6 text-pink-600 font-bold font-romantic">Sebelum lanjut...</h2>
+            <p class="text-gray-500 mb-6 font-medium">Hidupin lagunya dulu biar dapet suasananya!</p>
+            <button id="play-btn" onclick="toggleMusic()" class="bg-pink-50 border-2 border-pink-200 text-pink-500 w-24 h-24 rounded-full text-4xl shadow-inner mx-auto mb-6 flex items-center justify-center transition hover:scale-110 active:scale-95">🎵</button>
+            <p id="music-warning" class="hidden text-red-500 font-bold mb-4">Hidupin lagunya dulu ih!</p>
+            <button onclick="checkMusicAndContinue()" class="bg-pink-500 text-white font-bold py-3 px-12 rounded-full w-full hover:bg-pink-600 transition shadow-lg">Lanjut</button>
+        </div>
+    </div>
+
+    <div id="page-main" class="page">
+        <div class="bg-white/80 backdrop-blur-md p-10 rounded-3xl shadow-2xl max-w-2xl w-full text-center border-2 border-white">
+            <div class="floating-anim mb-6 flex justify-center">
+                <img src="assets/birthday.gif" class="w-48 h-48 object-contain rounded-2xl" alt="Happy Birthday GIF">
+            </div>
+            
+            <h1 class="font-romantic text-5xl text-pink-600 mb-8">Happy Birthday, Felicia!</h1>
+            <p id="typewriter" class="text-xl text-gray-700 leading-relaxed min-h-[100px] mb-8 font-medium italic"></p>
+            <button id="btn-next-gift" onclick="showPage('page-menu')" class="hidden bg-pink-500 text-white font-bold py-3 px-10 rounded-full animate-pulse mx-auto shadow-lg">Next Gift 🎁</button>
+        </div>
+    </div>
+
+    <div id="page-menu" class="page">
+        <h2 class="font-romantic text-4xl text-pink-600 mb-2 text-center">THESE ARE FOR YOU!</h2>
+        <p class="font-handwritten text-xl text-gray-500 mb-10 text-center italic">I hope you like it, I love you!</p>
+        <div class="grid grid-cols-2 gap-6 max-w-sm w-full mx-auto">
+            <div onclick="showPage('page-gallery')" class="bg-white p-6 rounded-2xl text-center shadow-lg cursor-pointer hover:scale-105 transition border-b-4 border-pink-300">
+                <span class="text-4xl">📸</span><p class="font-bold text-pink-600 mt-2">Gallery</p>
+            </div>
+            <div onclick="showPage('page-flowers')" class="bg-white p-6 rounded-2xl text-center shadow-lg cursor-pointer hover:scale-105 transition border-b-4 border-pink-300">
+                <span class="text-4xl">🐻</span><p class="font-bold text-pink-600 mt-2">Character</p>
+            </div>
+            <div onclick="showPage('page-video')" class="bg-white p-6 rounded-2xl text-center shadow-lg cursor-pointer hover:scale-105 transition border-b-4 border-pink-300">
+                <span class="text-4xl">🎬</span><p class="font-bold text-pink-600 mt-2">Video</p>
+            </div>
+            <div onclick="showPage('page-text')" class="bg-white p-6 rounded-2xl text-center shadow-lg cursor-pointer hover:scale-105 transition border-b-4 border-pink-300">
+                <span class="text-4xl">✉️</span><p class="font-bold text-pink-600 mt-2">Text</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-gallery" class="page" style="background-color: #fff5f7;">
+        <button onclick="showPage('page-menu')" class="fixed top-5 left-5 text-pink-500 font-bold z-50 bg-white/90 px-4 py-2 rounded-full shadow hover:bg-pink-50 transition">← Back</button>
+        
+        <div class="w-full max-w-5xl py-10 px-4">
+            <h2 class="font-romantic text-5xl text-pink-600 text-center mb-12">Memories Collection 🌸</h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                
+                <div class="photo-frame" onclick="openPhoto('assets/first date.jpeg', 'First Date')">
+                    <img src="assets/first date.jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">First Date</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/second date.jpeg', 'Second Date')">
+                    <img src="assets/second date.jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">Second Date</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/idk which date it was.jpeg', 'idk which date it was')">
+                    <img src="assets/idk which date it was.jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">idk which date it was</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/idk which date it was (3).jpeg', 'idk which date it was (2)')">
+                    <img src="assets/idk which date it was (3).jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">idk which date it was (2)</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/idk which date it was (2).jpeg', 'first date in Jakarta')">
+                    <img src="assets/idk which date it was (2).jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">First Date in Jakarta</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/baddie girl.jpg', 'photo that looks like a baddie girl')">
+                    <img src="assets/baddie girl.jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">Photo that looks like a baddie girl</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/cute girl.jpeg', 'funniest photos of you')">
+                    <img src="assets/cute girl.jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">Funniest Photos of You</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/always mirror.jpeg', 'always mirror')">
+                    <img src="assets/always mirror.jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">Always Mirror</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/our labubu.jpeg', 'our labubu')">
+                    <img src="assets/our labubu.jpeg" class="w-full aspect-square object-cover rounded-sm bg-pink-50" alt="Memory">
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">Our Labubu</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/dump of u.jpeg', 'dump of you')">
+                    <div class="grid grid-cols-2 gap-1 p-1 bg-gray-50">
+                        <img src="assets/dump 1.jpeg" class="w-full h-24 object-cover">
+                        <!-- <img src="assets/dump 2.jpeg" class="w-full h-24 object-cover"> -->
+                        <img src="assets/dump 3.jpeg" class="w-full h-24 object-cover">
+                        <!-- <img src="assets/dump 4.jpeg" class="w-full h-24 object-cover"> -->
+                        <img src="assets/dump 5.jpeg" class="w-full h-24 object-cover">
+                        <img src="assets/dump 6.jpeg" class="w-full h-24 object-cover">
+                    </div>
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">Dump of You</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/dump of u 2.jpeg', 'dump of you')">
+                    <div class="grid grid-cols-2 gap-1 p-1 bg-gray-50">
+                        <img src="assets/dump 7.jpeg" class="w-full h-24 object-cover">
+                        <img src="assets/dump 8.jpeg" class="w-full h-24 object-cover">
+                        <img src="assets/dump 9.jpeg" class="w-full h-24 object-cover">
+                        <!-- <img src="assets/dump 10.jpeg" class="w-full h-24 object-cover"> -->
+                        <!-- <img src="assets/dump 11.jpeg" class="w-full h-24 object-cover"> -->
+                        <img src="assets/dump 12.jpeg" class="w-full h-24 object-cover">
+                    </div>
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">Dump of You (2)</p>
+                </div>
+
+                <div class="photo-frame" onclick="openPhoto('assets/dump meals.jpeg', 'our meals together')">
+                    <div class="grid grid-cols-2 gap-1 p-1 bg-gray-50">
+                        <img src="assets/makan 1.jpeg" class="w-full h-24 object-cover">
+                        <img src="assets/makan 2.jpeg" class="w-full h-24 object-cover">
+                        <img src="assets/makan 3.jpeg" class="w-full h-24 object-cover">
+                        <img src="assets/makan 4.jpeg" class="w-full h-24 object-cover">
+                    </div>
+                    <p class="font-handwritten text-lg text-center text-gray-600 mt-2">Our Meals Together</p>
+                </div>
+
+            </div>
+            <div class="h-20"></div>
+        </div>
+    </div>
+
+    <div id="page-flowers" class="page">
+        <button onclick="showPage('page-menu')" class="fixed top-5 left-5 text-pink-500 font-bold z-50 bg-white/90 px-4 py-2 rounded-full shadow">← Back</button>
+        <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-sm text-center border-t-8 border-pink-300">
+            <img src="Assets/crybaby.jpeg" class="rounded-full w-40 h-40 object-cover mx-auto mb-6 animate-bounce shadow-lg">
+            <h3 class="text-2xl font-bold text-pink-600 mb-2 font-romantic">Cute Crybabu for You</h3>
+            <p class="italic text-gray-600">"Aku liat Crybaby Powerpuff Girls itu kayak kamu. Di satu sisi bisa kuat dan mandiri kayak Blossom atau Buttercup, tapi di sisi lain punya sisi lembut dan sensitif yang bikin orang pengen jagain kayak Bubbles. It’s literally the definition of 'strong but emotional'."</p>
+        </div>
+    </div>
+
+    <div id="page-video" class="page bg-black">
+        <button onclick="showPage('page-menu')" class="fixed top-5 left-5 text-white font-bold z-50 bg-white/10 px-4 py-2 rounded-full shadow">← Back</button>
+        
+        <div class="bg-red-900/40 p-4 rounded-xl mb-6 text-center border border-red-500 text-white w-[90%] max-w-lg mt-10">
+            <p class="text-sm mb-2">Please mute the background music first!</p>
+            <button onclick="toggleMusic()" class="bg-white text-red-600 px-4 py-1 rounded-full text-xs font-bold">MUTE/UNMUTE 🔊</button>
+        </div>
+
+        <div class="w-full max-w-2xl aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-pink-500/50 bg-gray-900">
+            <video controls class="w-full h-full">
+                <source src="Song/YTDown.com_YouTube_Bruno-Mars-Just-The-Way-You-Are-Official_Media_LjhCEhWiKXk_001_1080p.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="max-w-lg w-[90%] mt-8 text-center bg-white/10 p-6 rounded-2xl backdrop-blur-sm border border-white/20">
+            <h3 class="font-romantic text-3xl text-pink-400 mb-4">Just for You...</h3>
+            <div class="text-gray-200 italic leading-relaxed font-light space-y-3">
+                <p>
+                    I chose this song because every word reminds me of you. 
+                    Sometimes I don't think you realize how truly special you are.
+                </p>
+                <p class="text-white">
+                    "When I see your face, there's not a thing that I would change... 
+                    'cause girl, <span class="text-pink-400 font-bold">you're amazing, just the way you are.</span>"
+                </p>
+            </div>
+        </div>
+        
+        <div class="h-20"></div> 
+    </div>
+
+    <div id="page-text" class="page" style="background-color: #f7f7f7;">
+        <button onclick="showPage('page-menu')" class="fixed top-5 left-5 text-gray-500 font-bold z-50 bg-white/90 px-4 py-2 rounded-full shadow">← Back</button>
+        <div class="bg-white p-12 shadow-xl max-w-xl w-full border-l-8 border-pink-400 my-10">
+            <h2 class="font-romantic text-4xl mb-6 text-pink-600 italic">Dearest,</h2>
+            <div class="text-gray-700 leading-relaxed text-justify space-y-4 font-medium italic">
+                <p>Hai Felice!</p>
+                <p>So proud to know you and to be your friend. I hope you have a great year ahead, filled with love, laughter, and all the things that make you happy. You deserve it all!</p>
+                <p>Keep shining bright, Felice. I love you more than you'll ever know! ❤️</p>
+            </div>
+            <p class="text-right mt-10 font-handwritten text-4xl text-pink-400">- A</p>
+        </div>
+    </div>
+
+    <script>
+        function openPhoto(src, caption) {
+            document.getElementById('modal-img').src = src;
+            document.getElementById('modal-caption').innerText = caption;
+            document.getElementById('photo-modal').style.display = 'flex';
+        }
+
+        window.onload = function() {
+            const gifImage = document.getElementById('gift-gif');
+            if (gifImage) {
+                const src = gifImage.src;
+                gifImage.src = src + "?t=" + new Date().getTime();
+            }
+        };
+
+        const music = document.getElementById('bg-music');
+        let isMusicPlaying = false;
+        let typewriterIndex = 0;
+        const mainMsg = "Selamat ulang tahun ya! Aku buat ini khusus buat kamu sebagai tanda sayangku. I hope you like every bit of it! ❤️";
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            const target = document.getElementById(pageId);
+            target.classList.add('active');
+            
+            // Scroll ke atas setiap ganti halaman
+            window.scrollTo(0, 0);
+
+            if(pageId === 'page-main' && typewriterIndex === 0) {
+                setTimeout(startTypewriter, 1000);
+            }
+        }
+
+        function sayNo() {
+            document.getElementById('welcome-container').classList.add('hidden');
+            document.getElementById('initial-choice').classList.add('hidden');
+            document.getElementById('rejected-container').classList.remove('hidden');
+            document.getElementById('rejected-choice').classList.remove('hidden');
+        }
+
+        function resetWelcome() {
+            document.getElementById('rejected-container').classList.add('hidden');
+            document.getElementById('rejected-choice').classList.add('hidden');
+            document.getElementById('welcome-container').classList.remove('hidden');
+            document.getElementById('initial-choice').classList.remove('hidden');
+            document.getElementById('welcome-text').innerText = "Please... I have a surprise! ❤️";
+        }
+
+        function toggleMusic() {
+            if (music.paused) { 
+                music.play(); isMusicPlaying = true; 
+                document.getElementById('play-btn').innerText = "🔊"; 
+                document.getElementById('music-warning').classList.add('hidden');
+            } else { 
+                music.pause(); isMusicPlaying = false; 
+                document.getElementById('play-btn').innerText = "🎵"; 
+            }
+        }
+
+        function checkMusicAndContinue() {
+            if (isMusicPlaying) { showPage('page-main'); startHearts(); }
+            else { document.getElementById('music-warning').classList.remove('hidden'); }
+        }
+
+        function startTypewriter() {
+            if (typewriterIndex < mainMsg.length) {
+                document.getElementById("typewriter").innerHTML += mainMsg.charAt(typewriterIndex);
+                typewriterIndex++;
+                setTimeout(startTypewriter, 60);
+            } else {
+                document.getElementById('btn-next-gift').classList.remove('hidden');
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('heart');
+            heart.style.left = Math.random() * 100 + "vw";
+            heart.style.width = Math.random() * 20 + 10 + "px";
+            heart.style.height = heart.style.width;
+            heart.style.animationDuration = Math.random() * 3 + 4 + "s";
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 6000);
+        }
+        function startHearts() { setInterval(createHeart, 450); }
+    </script>
+</body>
+</html>
